@@ -61,7 +61,7 @@ const totalCount = document.getElementById('total-count');
 
 let draggedElementName = null;
 let activeWorkspaceDrag = null;
-let dragOffset = { x: 0, y: 0 };
+let dragStartElement = null;
 
 // Debug log
 console.log('Initialization:', {
@@ -100,11 +100,12 @@ function createWorkspaceElement(name) {
   div.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     activeWorkspaceDrag = div;
-    const rect = workspace.getBoundingClientRect();
-    const divRect = div.getBoundingClientRect();
-    // Calculate offset relative to workspace coordinates
-    dragOffset.x = (e.clientX - rect.left) - (divRect.left - rect.left);
-    dragOffset.y = (e.clientY - rect.top) - (divRect.top - rect.top);
+    dragStartElement = {
+      element: div,
+      elementClientRect: div.getBoundingClientRect(),
+      clickOffsetX: e.clientX - div.getBoundingClientRect().left,
+      clickOffsetY: e.clientY - div.getBoundingClientRect().top
+    };
     div.classList.add('dragging');
     div.setPointerCapture(e.pointerId);
   });
@@ -114,6 +115,7 @@ function createWorkspaceElement(name) {
       div.releasePointerCapture(e.pointerId);
       div.classList.remove('dragging');
       activeWorkspaceDrag = null;
+      dragStartElement = null;
       checkForCombinationWithMoved(div);
     }
   });
@@ -122,6 +124,7 @@ function createWorkspaceElement(name) {
     if (activeWorkspaceDrag === div) {
       div.classList.remove('dragging');
       activeWorkspaceDrag = null;
+      dragStartElement = null;
     }
   });
   
@@ -259,12 +262,33 @@ workspace.addEventListener('drop', (e) => {
 });
 
 document.addEventListener('pointermove', (e) => {
-  if (!activeWorkspaceDrag) return;
-  const rect = workspace.getBoundingClientRect();
-  const x = (e.clientX - rect.left) - dragOffset.x;
-  const y = (e.clientY - rect.top) - dragOffset.y;
-  activeWorkspaceDrag.style.left = `${Math.max(0, Math.min(x, workspace.offsetWidth - activeWorkspaceDrag.offsetWidth))}px`;
-  activeWorkspaceDrag.style.top = `${Math.max(0, Math.min(y, workspace.offsetHeight - activeWorkspaceDrag.offsetHeight))}px`;
+  if (!activeWorkspaceDrag || !dragStartElement) return;
+  
+  const workspaceRect = workspace.getBoundingClientRect();
+  const workspaceStyle = window.getComputedStyle(workspace);
+  
+  // Account for workspace padding
+  const paddingLeft = parseFloat(workspaceStyle.paddingLeft);
+  const paddingTop = parseFloat(workspaceStyle.paddingTop);
+  
+  // Calculate mouse position in workspace content coordinates
+  const mouseWorkspaceX = e.clientX - workspaceRect.left - paddingLeft;
+  const mouseWorkspaceY = e.clientY - workspaceRect.top - paddingTop;
+  
+  // Calculate element's new position so the click point stays under mouse
+  let newX = mouseWorkspaceX - dragStartElement.clickOffsetX;
+  let newY = mouseWorkspaceY - dragStartElement.clickOffsetY;
+  
+  // Get workspace content dimensions (accounting for padding)
+  const workspaceContentWidth = workspaceRect.width - paddingLeft - parseFloat(workspaceStyle.paddingRight);
+  const workspaceContentHeight = workspaceRect.height - paddingTop - parseFloat(workspaceStyle.paddingBottom);
+  
+  // Clamp to workspace content bounds
+  newX = Math.max(0, Math.min(newX, workspaceContentWidth - activeWorkspaceDrag.offsetWidth));
+  newY = Math.max(0, Math.min(newY, workspaceContentHeight - activeWorkspaceDrag.offsetHeight));
+  
+  activeWorkspaceDrag.style.left = Math.round(newX) + 'px';
+  activeWorkspaceDrag.style.top = Math.round(newY) + 'px';
 });
 
 function checkForCombinations() {
