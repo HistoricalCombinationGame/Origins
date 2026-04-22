@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Origins - Historical Combination Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page-background"></div>
+  
+  <main class="app-shell">
+    <header class="historical-header">
+      <div class="header-ornament header-top"></div>
+      <h1>Origins</h1>
+      <p class="tagline">Discover Civilization from Simple Beginnings</p>
+      <div class="stats-box">
+        <div class="stat-item">
+          <span class="stat-number" id="discovery-count">0</span>
+          <span class="stat-label">Discovered</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number" id="total-count">0</span>
+          <span class="stat-label">Total</span>
+        </div>
+      </div>
+      <div class="header-ornament header-bottom"></div>
+    </header>
+
+    <div class="game-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>Elements</h2>
+          <div class="sidebar-divider"></div>
+        </div>
+        <div class="elements-list" id="elements-list"></div>
+      </aside>
+
+      <div class="workspace" id="workspace">
+        <div class="placeholder">
+          <p>Combine two elements to discover</p>
+          <p>the foundations of civilization</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="result-message" class="notification"></div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
