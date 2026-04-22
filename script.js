@@ -102,8 +102,9 @@ function createWorkspaceElement(name) {
     activeWorkspaceDrag = div;
     const rect = workspace.getBoundingClientRect();
     const divRect = div.getBoundingClientRect();
-    dragOffset.x = e.clientX - divRect.left;
-    dragOffset.y = e.clientY - divRect.top;
+    // Calculate offset relative to workspace coordinates
+    dragOffset.x = (e.clientX - rect.left) - (divRect.left - rect.left);
+    dragOffset.y = (e.clientY - rect.top) - (divRect.top - rect.top);
     div.classList.add('dragging');
     div.setPointerCapture(e.pointerId);
   });
@@ -260,8 +261,8 @@ workspace.addEventListener('drop', (e) => {
 document.addEventListener('pointermove', (e) => {
   if (!activeWorkspaceDrag) return;
   const rect = workspace.getBoundingClientRect();
-  const x = e.clientX - rect.left - dragOffset.x;
-  const y = e.clientY - rect.top - dragOffset.y;
+  const x = (e.clientX - rect.left) - dragOffset.x;
+  const y = (e.clientY - rect.top) - dragOffset.y;
   activeWorkspaceDrag.style.left = `${Math.max(0, Math.min(x, workspace.offsetWidth - activeWorkspaceDrag.offsetWidth))}px`;
   activeWorkspaceDrag.style.top = `${Math.max(0, Math.min(y, workspace.offsetHeight - activeWorkspaceDrag.offsetHeight))}px`;
 });
