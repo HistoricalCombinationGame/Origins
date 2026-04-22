@@ -100,8 +100,10 @@ function createWorkspaceElement(name) {
   div.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
     activeWorkspaceDrag = div;
-    dragOffset.x = e.clientX - div.offsetLeft;
-    dragOffset.y = e.clientY - div.offsetTop;
+    const rect = workspace.getBoundingClientRect();
+    const divRect = div.getBoundingClientRect();
+    dragOffset.x = e.clientX - divRect.left;
+    dragOffset.y = e.clientY - divRect.top;
     div.classList.add('dragging');
     div.setPointerCapture(e.pointerId);
   });
