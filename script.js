@@ -345,7 +345,7 @@ const resultFlare = document.getElementById('result-flare');
 const discoveryCount = document.getElementById('discovery-count');
 const totalCount = document.getElementById('total-count');
 const combinationCountEl = document.getElementById('combination-count');
-const indexGrid = document.getElementById('elements-grid');
+const elementIndexList = document.getElementById('element-index-list');
 const questsGrid = document.getElementById('quests-grid');
 const indexDiscoveryCount = document.getElementById('index-discovery-count');
 const progressDiscovery = document.getElementById('progress-discovery');
@@ -573,22 +573,60 @@ function getPossibleCombinations(name) {
     .filter(r => !discovered.has(r));
 }
 
+function getAllIndexCombinations(name) {
+  return Object.entries(combinationRules)
+    .filter(([pair]) => pair.split('+').includes(name))
+    .map(([pair, result]) => ({ pair, result }));
+}
+
 function populateIndex() {
-  indexGrid.innerHTML = '';
-  const list = Array.from(discovered).sort((a, b) => discoveryOrder.indexOf(a) - discoveryOrder.indexOf(b));
+  elementIndexList.innerHTML = '';
+  const list = Object.keys(elementsData).sort((a, b) => {
+    const aDiscovered = discovered.has(a);
+    const bDiscovered = discovered.has(b);
+    if (aDiscovered && bDiscovered) return discoveryOrder.indexOf(a) - discoveryOrder.indexOf(b);
+    if (aDiscovered) return -1;
+    if (bDiscovered) return 1;
+    return a.localeCompare(b);
+  });
+
   list.forEach((name) => {
     const data = getElementData(name);
-    const entry = document.createElement('article');
-    entry.className = 'element-index-card';
-    entry.innerHTML = `
-      <div class="index-title">
-        <div class="index-icon">${data.icon}</div>
-        <div><strong>${data.title}</strong><span>${data.description}</span></div>
-      </div>
-      <div class="index-meta"><span>#${discoveryOrder.indexOf(name) + 1}</span><span>${getPossibleCombinations(name).length} combos</span></div>
-      <p class="index-fact">${data.fact}</p>
-    `;
-    indexGrid.appendChild(entry);
+    const comboEntries = getAllIndexCombinations(name);
+    const li = document.createElement('li');
+    li.className = 'element-index-entry';
+
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.innerHTML = `<span class="index-icon">${data.icon}</span><strong>${data.title}</strong> <span class="element-label">${discovered.has(name) ? `#${discoveryOrder.indexOf(name) + 1}` : 'Locked'}</span>`;
+    details.appendChild(summary);
+
+    const body = document.createElement('div');
+    body.className = 'index-details';
+    body.innerHTML = `<p>${data.description}</p><p class="index-fact">${data.fact}</p>`;
+
+    const comboTitle = document.createElement('div');
+    comboTitle.className = 'combo-header';
+    comboTitle.textContent = comboEntries.length ? 'Combinations' : 'No known combinations yet';
+    body.appendChild(comboTitle);
+
+    if (comboEntries.length) {
+      const comboList = document.createElement('ul');
+      comboList.className = 'combo-list';
+      comboEntries.forEach(({ pair, result }) => {
+        const comboItem = document.createElement('li');
+        comboItem.textContent = `${pair} → ${getElementData(result).title}`;
+        comboList.appendChild(comboItem);
+      });
+      body.appendChild(comboList);
+    }
+
+    details.appendChild(body);
+    if (!discovered.has(name)) {
+      details.classList.add('locked');
+    }
+    li.appendChild(details);
+    elementIndexList.appendChild(li);
   });
 }
 
@@ -645,8 +683,14 @@ workspace.addEventListener('drop', (e) => {
 
 tabButtons.forEach(btn => {
   btn.addEventListener('click', () => {
-    tabButtons.forEach(b => b.classList.toggle('active', b === btn));
-    tabPanels.forEach(p => p.classList.toggle('active', p.id === `${btn.dataset.tab}-tab`));
+    // Remove active class from all tabs and panels
+    tabButtons.forEach(t => t.classList.remove('active'));
+    tabPanels.forEach(p => p.classList.remove('active'));
+
+    // Add active class to the clicked tab and corresponding panel
+    btn.classList.add('active');
+    const targetPanel = document.getElementById(`${btn.dataset.tab}-tab`);
+    targetPanel.classList.add('active');
   });
 });
 
@@ -654,92 +698,47 @@ resetBtn.addEventListener('click', resetGame);
 
 initialize();
 
-// Populate Element Index Dropdowns
-const populateElementIndex = () => {
-  const elementIndexList = document.getElementById('element-index-list');
-  elementIndexList.innerHTML = ''; // Clear existing content
+function startBackgroundMusic() {
+  if (window.musicStarted) return;
+  window.musicStarted = true;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
 
-  Object.keys(elementsData).forEach(element => {
-    const li = document.createElement('li');
-    const dropdown = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.textContent = `${elementsData[element].icon} ${elementsData[element].title}`;
-    dropdown.appendChild(summary);
+  const audioCtx = new AudioContext();
+  const master = audioCtx.createGain();
+  master.gain.value = 0.04;
+  master.connect(audioCtx.destination);
 
-    const combinations = Object.keys(combinationRules).filter(rule => {
-      const [first, second] = rule.split('+');
-      return first === element || second === element;
-    });
+  const carrier = audioCtx.createOscillator();
+  carrier.type = 'sine';
+  carrier.frequency.value = 220;
 
-    const ul = document.createElement('ul');
-    combinations.forEach(combo => {
-      const result = combinationRules[combo];
-      const li = document.createElement('li');
-      li.textContent = `${combo} → ${result}`;
-      ul.appendChild(li);
-    });
+  const modulator = audioCtx.createOscillator();
+  modulator.type = 'triangle';
+  modulator.frequency.value = 0.15;
 
-    dropdown.appendChild(ul);
-    li.appendChild(dropdown);
-    elementIndexList.appendChild(li);
+  const modulation = audioCtx.createGain();
+  modulation.gain.value = 40;
+  modulator.connect(modulation);
+  modulation.connect(carrier.frequency);
+  carrier.connect(master);
+  carrier.start();
+  modulator.start();
+
+  const chordNotes = [220, 261.63, 329.63];
+  chordNotes.forEach((freq, index) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.type = 'triangle';
+    gain.gain.value = 0.01;
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(audioCtx.currentTime + index * 0.1);
+    osc.stop(audioCtx.currentTime + 12);
   });
-};
+}
 
-// Populate Quests Dropdowns
-const populateQuests = () => {
-  const questsGrid = document.getElementById('quests-grid');
-  questsGrid.innerHTML = ''; // Clear existing content
-
-  // Example quest data (replace with actual quest logic)
-  const quests = [
-    { title: 'Discover Fire', description: 'Combine elements to create Fire.' },
-    { title: 'Build a Settlement', description: 'Combine Shelter and Land.' }
-  ];
-
-  quests.forEach(quest => {
-    const questCard = document.createElement('div');
-    questCard.classList.add('quest-card');
-
-    const questTitle = document.createElement('h3');
-    questTitle.textContent = quest.title;
-    questCard.appendChild(questTitle);
-
-    const questDescription = document.createElement('p');
-    questDescription.textContent = quest.description;
-    questCard.appendChild(questDescription);
-
-    questsGrid.appendChild(questCard);
-  });
-};
-
-// Populate Progress Dropdowns
-const populateProgress = () => {
-  const discoveryProgress = document.getElementById('progress-discovery');
-  const discoveryText = document.getElementById('progress-discovery-text');
-  const questsProgress = document.getElementById('progress-quests');
-  const questsText = document.getElementById('progress-quests-text');
-
-  const totalElements = Object.keys(elementsData).length;
-  const discoveredElements = 10; // Replace with actual discovered count
-  const completedQuests = 2; // Replace with actual completed quests count
-  const totalQuests = 5; // Replace with actual total quests count
-
-  const discoveryRate = (discoveredElements / totalElements) * 100;
-  const questRate = (completedQuests / totalQuests) * 100;
-
-  discoveryProgress.style.width = `${discoveryRate}%`;
-  discoveryText.textContent = `${Math.round(discoveryRate)}%`;
-
-  questsProgress.style.width = `${questRate}%`;
-  questsText.textContent = `${Math.round(questRate)}%`;
-};
-
-// Initialize all dropdowns
-const initializeDropdowns = () => {
-  populateElementIndex();
-  populateQuests();
-  populateProgress();
-};
-
-// Call initialization on page load
-window.onload = initializeDropdowns;
+document.body.addEventListener('click', () => {
+  startBackgroundMusic();
+}, { once: true });
