@@ -11,6 +11,114 @@ const baseElements = [
   'Movement'
 ];
 
+// Supabase configuration
+const SUPABASE_URL = 'https://ppyzexowloeogqydpymw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1i-QKV9y88DWbgGaL70WDw_OR8NYZvg';
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// User session management
+let currentUserId = null;
+
+// Data persistence functions
+async function initializeUser() {
+  try {
+    // Try to get existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      currentUserId = session.user.id;
+      console.log('User authenticated:', currentUserId);
+      await loadUserProgress();
+    } else {
+      // Create anonymous user session
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) throw error;
+      currentUserId = data.user.id;
+      console.log('Anonymous user created:', currentUserId);
+    }
+  } catch (error) {
+    console.error('Error initializing user:', error);
+    // Fallback to local storage if Supabase fails
+    loadFromLocalStorage();
+  }
+}
+
+async function saveUserProgress() {
+  if (!currentUserId) return;
+  
+  try {
+    const progressData = {
+      user_id: currentUserId,
+      discovered_elements: Array.from(discovered),
+      last_updated: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('user_progress')
+      .upsert(progressData, { onConflict: 'user_id' });
+
+    if (error) throw error;
+    console.log('Progress saved to Supabase');
+  } catch (error) {
+    console.error('Error saving progress:', error);
+    // Fallback to local storage
+    saveToLocalStorage();
+  }
+}
+
+async function loadUserProgress() {
+  if (!currentUserId) return;
+  
+  try {
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('discovered_elements')
+      .eq('user_id', currentUserId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
+    
+    if (data?.discovered_elements) {
+      discovered.clear();
+      data.discovered_elements.forEach(element => discovered.add(element));
+      console.log('Progress loaded from Supabase:', data.discovered_elements.length, 'elements');
+      refreshSidebar();
+      updateStats();
+    }
+  } catch (error) {
+    console.error('Error loading progress:', error);
+    // Fallback to local storage
+    loadFromLocalStorage();
+  }
+}
+
+// Local storage fallback functions
+function saveToLocalStorage() {
+  try {
+    localStorage.setItem('origins_discovered', JSON.stringify(Array.from(discovered)));
+    console.log('Progress saved to local storage');
+  } catch (error) {
+    console.error('Error saving to local storage:', error);
+  }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const saved = localStorage.getItem('origins_discovered');
+    if (saved) {
+      const elements = JSON.parse(saved);
+      discovered.clear();
+      elements.forEach(element => discovered.add(element));
+      console.log('Progress loaded from local storage:', elements.length, 'elements');
+      refreshSidebar();
+      updateStats();
+    }
+  } catch (error) {
+    console.error('Error loading from local storage:', error);
+  }
+}
+
 function sortedKey(a, b) {
   return a < b ? `${a}+${b}` : `${b}+${a}`;
 }
@@ -203,6 +311,7 @@ function checkForCombinationWithMoved(movedEl) {
       const x = parseFloat(movedEl.style.left);
       const y = parseFloat(movedEl.style.top);
       discovered.add(result);
+      saveUserProgress(); // Save progress when new element discovered
       refreshSidebar();
       updateStats();
       movedEl.remove();
@@ -301,3 +410,20 @@ refreshSidebar();
 console.log('After refreshSidebar, sidebar has', elementsList.children.length, 'children');
 updateStats();
 console.log('Stats updated');
+
+// Initialize Supabase and load user data
+initializeUser();
+
+const tabButtons = document.querySelectorAll('.tab-button');
+const tabPanels = document.querySelectorAll('.tab-panel');
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    const targetTab = button.dataset.tab;
+
+    tabButtons.forEach((btn) => btn.classList.toggle('active', btn === button));
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle('active', panel.id === `${targetTab}-tab`);
+    });
+  });
+});

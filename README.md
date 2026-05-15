@@ -46,6 +46,26 @@ Revolution + Government → New Nation
 - `index.html` — game interface
 - `styles.css` — visual layout and styling
 - `script.js` — game logic and combination rules
+- `supabase_setup.sql` — database schema for user progress saving
+
+## Supabase Setup (Optional)
+The game includes Supabase integration for saving user progress across sessions.
+
+### 1. Create a Supabase Project
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. Note your project URL and API keys from the dashboard
+
+### 2. Set up the Database
+1. In your Supabase dashboard, go to the SQL Editor
+2. Run the contents of `supabase_setup.sql` to create the user_progress table
+
+### 3. Configure the App
+1. Open `script.js`
+2. Replace `'https://your-project-ref.supabase.co'` with your actual Supabase project URL
+3. The anon key is already configured
+
+### 4. Enable Authentication
+The app uses anonymous authentication, so users can save progress without creating accounts. If you want user accounts, you can modify the authentication flow.
 
 ## Notes
 The app is designed for Grades 6–12 students, beginner history learners, and fans of crafting/combination games.

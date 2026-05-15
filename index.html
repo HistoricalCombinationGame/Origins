@@ -3,47 +3,138 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Origins - Historical Combination Game</title>
+  <title>Origins: Alchemy of History</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="page-background"></div>
-  
+
   <main class="app-shell">
-    <header class="historical-header">
-      <div class="header-ornament header-top"></div>
-      <h1>Origins</h1>
-      <p class="tagline">Discover Civilization from Simple Beginnings</p>
-      <div class="stats-box">
-        <div class="stat-item">
-          <span class="stat-number" id="discovery-count">0</span>
-          <span class="stat-label">Discovered</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item">
-          <span class="stat-number" id="total-count">0</span>
-          <span class="stat-label">Total</span>
-        </div>
-      </div>
-      <div class="header-ornament header-bottom"></div>
-    </header>
+    <nav class="navigation-tabs">
+      <button class="tab-button active" data-tab="combine">Forge</button>
+      <button class="tab-button" data-tab="discovered">Chronicles</button>
+      <button class="tab-button" data-tab="progress">Quest</button>
+    </nav>
 
-    <div class="game-container">
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h2>Elements</h2>
-          <div class="sidebar-divider"></div>
-        </div>
-        <div class="elements-list" id="elements-list"></div>
-      </aside>
+    <div class="tab-content">
+      <section id="combine-tab" class="tab-panel active">
+        <div class="content-panel">
+          <div class="stats-strip">
+            <div class="stat-item">
+              <span class="stat-number" id="discovery-count">0</span>
+              <span class="stat-label">Discovered</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-number" id="total-count">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+          </div>
+          <div class="game-container">
+            <aside class="sidebar">
+              <div class="sidebar-header">
+                <h2>Mystic Elements</h2>
+                <div class="sidebar-divider"></div>
+              </div>
+              <div class="elements-list" id="elements-list"></div>
+            </aside>
 
-      <div class="workspace" id="workspace">
-        <div class="placeholder">
-          <p>Combine two elements to discover</p>
-          <p>the foundations of civilization</p>
+            <div class="workspace" id="workspace">
+              <div class="placeholder">
+                <div class="placeholder-icon">🏰</div>
+                <p>Drag elements from the mystic grimoire</p>
+                <p class="placeholder-subtitle">Unleash the ancient alchemy of civilization</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section id="discovered-tab" class="tab-panel">
+        <div class="discovered-container">
+          <div class="discovered-header">
+            <h2>Chronicles of Discovery</h2>
+            <p class="discovered-subtitle">Chronicles of your alchemical discoveries</p>
+          </div>
+          <div class="elements-grid" id="elements-grid"></div>
+        </div>
+      </section>
+
+      <section id="progress-tab" class="tab-panel">
+        <div class="progress-container">
+          <div class="progress-header">
+            <h2>Quest of the Alchemist</h2>
+            <p class="progress-subtitle">Your journey through the elements of civilization</p>
+          </div>
+          <div class="progress-content">
+            <div class="progress-stats">
+              <div class="progress-stat-card">
+                <div class="stat-icon">🔮</div>
+                <div class="stat-info">
+                  <div class="stat-value" id="progress-discovery-count">0</div>
+                  <div class="stat-label">Elements Discovered</div>
+                </div>
+              </div>
+              <div class="progress-stat-card">
+                <div class="stat-icon">⚗️</div>
+                <div class="stat-info">
+                  <div class="stat-value" id="progress-combination-count">0</div>
+                  <div class="stat-label">Combinations Made</div>
+                </div>
+              </div>
+              <div class="progress-stat-card">
+                <div class="stat-icon">🏛️</div>
+                <div class="stat-info">
+                  <div class="stat-value" id="progress-completion">0%</div>
+                  <div class="stat-label">Civilization Progress</div>
+                </div>
+              </div>
+            </div>
+            <div class="tier-progress">
+              <h3>Tier Advancement</h3>
+              <div class="tier-bars">
+                <div class="tier-bar">
+                  <div class="tier-label">Tier 1: Foundations</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill tier-1-fill" id="tier-1-progress"></div>
+                  </div>
+                  <div class="tier-count" id="tier-1-count">0/10</div>
+                </div>
+                <div class="tier-bar">
+                  <div class="tier-label">Tier 2: Settlements</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill tier-2-fill" id="tier-2-progress"></div>
+                  </div>
+                  <div class="tier-count" id="tier-2-count">0/5</div>
+                </div>
+                <div class="tier-bar">
+                  <div class="tier-label">Tier 3: Societies</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill tier-3-fill" id="tier-3-progress"></div>
+                  </div>
+                  <div class="tier-count" id="tier-3-count">0/7</div>
+                </div>
+                <div class="tier-bar">
+                  <div class="tier-label">Tier 4: Civilizations</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill tier-4-fill" id="tier-4-progress"></div>
+                  </div>
+                  <div class="tier-count" id="tier-4-count">0/5</div>
+                </div>
+                <div class="tier-bar">
+                  <div class="tier-label">Tier 5: Revolutions</div>
+                  <div class="progress-bar">
+                    <div class="progress-fill tier-5-fill" id="tier-5-progress"></div>
+                  </div>
+                  <div class="tier-count" id="tier-5-count">0/3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <div id="result-message" class="notification"></div>
